@@ -24,10 +24,15 @@ jobs:
       - name: Build
         #      run: go build -v ./...
         run: make all
+      - uses: actions/upload-artifact@v4
+        with:
+          path: build
+          retention-days: 5
 
       - uses: actions/download-artifact@v4
         with:
           path: build
+
 
       - name: List artifacts
         run: ls -R build/
