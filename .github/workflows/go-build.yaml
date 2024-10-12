@@ -26,6 +26,7 @@ jobs:
         run: make all
       - uses: actions/upload-artifact@v4
         with:
+          name: 'go-solarmanV5-proxy'
           path: build
           retention-days: 5
 
