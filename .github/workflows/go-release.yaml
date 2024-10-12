@@ -30,4 +30,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            build/go-solarmanV5-proxy/*
+            build/go-solarmanV5-proxy/*/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
