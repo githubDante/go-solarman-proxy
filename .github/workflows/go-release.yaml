@@ -1,0 +1,33 @@
+name: Go-Release
+
+on:
+  push:
+    tags:
+      - "*"
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.x'
+      - name: Build
+        run: make all
+      - uses: actions/upload-artifact@v4
+        with:
+          name: 'go-solarmanV5-proxy'
+          path: build
+          retention-days: 5
+      - uses: actions/download-artifact@v4
+        with:
+          path: build
+      - name: List artifacts
+        run: ls -R build/
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            build/go-solarmanV5-proxy/*
