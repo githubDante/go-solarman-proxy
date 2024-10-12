@@ -27,7 +27,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          path: build/
+          path: build
 
       - name: List artifacts
         run: ls -R build/
