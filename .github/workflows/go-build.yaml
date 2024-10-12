@@ -23,8 +23,14 @@ jobs:
 
       - name: Build
         #      run: go build -v ./...
-        run: make
+        run: make all
 
+      - uses: actions/download-artifact@v4
+        with:
+          path: build/
+
+      - name: List artifacts
+        run: ls -R build/
 
 #    - name: Test
 #      run: go test -v ./...
