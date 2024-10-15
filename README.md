@@ -23,6 +23,7 @@
     go-solarmanV5-proxy 192.168.1.3 12345
     ```
   * `-debug` flag can be used to see what's going on under the hood :sunglasses:
+  * `-silent` flag will make the proxy completely silent
   * all messages are logged to stdout for now 
 * Data logger configuration (config_hide.html)
 ![image](img/logger_tcp_srv.png "Config")
@@ -36,3 +37,11 @@ All clients then can be connected to port 8899 of the proxy server
 make 
 ```
 * The binary will be placed in the `build` dir 
+
+----
+#### Install
+```console
+go install github.com/githubDante/go-solarman-proxy@latest
+```
+
+* for ready to use binaries see [Releases](https://github.com/githubDante/go-solarman-proxy/releases) 

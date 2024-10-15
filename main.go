@@ -11,6 +11,7 @@ import (
 
 func main() {
 	debug := flag.Bool("debug", false, "enable debug logging")
+	silent := flag.Bool("silent", false, "enable silent mode")
 	flag.Parse()
 	args := flag.Args()
 
@@ -27,6 +28,9 @@ func main() {
 	}
 	if *debug {
 		log.EnableDebug()
+	}
+	if *silent {
+		log.EnableSilent()
 	}
 	proxy := server.NewProxy(ip, int(port))
 	err = proxy.Serve()
