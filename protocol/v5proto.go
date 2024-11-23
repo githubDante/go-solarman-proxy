@@ -47,11 +47,16 @@ func NewV5Frame(data []byte) (*V5Frame, error) {
 
 // ChecksumOK V5 packet checksum verification
 func (f *V5Frame) ChecksumOK() bool {
+	return f.CalculatedChecksum() == f.checksum
+}
+
+// CalculatedChecksum V5 frame checksum
+func (f *V5Frame) CalculatedChecksum() byte {
 	var checksum byte
 	for i := 1; i < len(f.packet)-2; i++ {
 		checksum += f.packet[i] & 0xff
 	}
-	return checksum == f.checksum
+	return checksum
 }
 
 func (f *V5Frame) LoggerSN() uint32 {
