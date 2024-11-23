@@ -24,11 +24,14 @@
     ```
   * `-debug` flag can be used to see what's going on under the hood :sunglasses:
   * `-silent` flag will make the proxy completely silent
+  * `-bcast` enable the broadcast listener/server
   * all messages are logged to stdout for now 
 * Data logger configuration (config_hide.html)
 ![image](img/logger_tcp_srv.png "Config")
 
-All clients then can be connected to port 8899 of the proxy server 
+All clients then can be connected to port 8899 of the proxy server
+
+When the `-bcast` flag is used the proxy will respond to logger scan requests. All dataloggers currently connected will be listed.
 
 ---
 #### Build
