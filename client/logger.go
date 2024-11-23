@@ -56,6 +56,7 @@ func (c *ClientLogger) Run() {
 			c.stoppedCh <- &CommLogger{Serial: c.Id, Logger: c}
 		}
 	}()
+	c.serialProbe() // probe for serial on connect
 	for {
 		buffer := make([]byte, 2048)
 		//time.Sleep(200 * time.Millisecond)
@@ -114,11 +115,13 @@ func (c *ClientLogger) sendToAll(data []byte) {
 			stopped = append(stopped, cl.Id)
 		}
 	}
-	log.LogDebugf("Logger <%p> data sent to all [%d] clients...\n", c, len(c.Clients))
-	log.LogDebugf("Logger <%p> data: %s\n", c, hex.EncodeToString(data))
+
 	for _, s := range stopped {
 		delete(c.Clients, s)
 	}
+
+	log.LogDebugf("Logger <%p> data sent to all [%d] clients...\n", c, len(c.Clients))
+	log.LogDebugf("Logger <%p> data: %s\n", c, hex.EncodeToString(data))
 }
 
 func (c *ClientLogger) Add(cl *ClientSolarman) {
@@ -147,4 +150,10 @@ func (c *ClientLogger) DumpClients() []*ClientSolarman {
 	}
 	c.Clients = nil
 	return clients
+}
+
+// serialProbe send a predefined packet to the datalogger in order to acquire the serial number
+func (c *ClientLogger) serialProbe() {
+	probe := ReadHolding
+	c.Conn.Write(probe.ToBytes())
 }
