@@ -68,7 +68,7 @@ func (s *V5ProxyServer) Wait() {
 }
 
 // Serve - Creates listeners and starts the proxy loops
-func (s *V5ProxyServer) Serve() error {
+func (s *V5ProxyServer) Serve(enableBroadcast bool) error {
 
 	var err error
 	s.clientsL, err = net.Listen("tcp4", fmt.Sprintf("%s:%d", "0.0.0.0", s.ClientsPort))
@@ -86,6 +86,9 @@ func (s *V5ProxyServer) Serve() error {
 	go s.clientsConn()
 	go s.handleBroadcasts()
 	go s.janitor()
+	if enableBroadcast {
+		go s.handleScanBroadcasts()
+	}
 
 	s.blocker.Lock()
 	return nil
@@ -173,8 +176,12 @@ func (s *V5ProxyServer) manageClients() {
 		cl := <-s.clientsComm // Serial received from a solarman client
 		logger, ok := s.loggers[cl.Serial]
 		if ok && logger.Running {
+			s.mapSync.Lock()
 			logger.Add(cl.Client)
 			cl.Client.Logger = logger
+			delete(s.pending, cl.Client.Id)
+			s.mapSync.Unlock()
+			log.LogDebugf("<%p> removed from pending.\n", cl.Client)
 		} else {
 			log.LogWarnf("No logger connected for [%d]\n", cl.Serial)
 		}

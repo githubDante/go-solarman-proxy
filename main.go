@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	log "github.com/githubDante/go-solarman-proxy/logging"
 	"os"
 	"strconv"
@@ -10,8 +11,15 @@ import (
 )
 
 func main() {
+	flag.Usage = func() {
+		fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s:\n", os.Args[0])
+		fmt.Fprintf(flag.CommandLine.Output(), "%s [flags] <IP Address> <Port>\n", os.Args[0])
+		fmt.Fprintf(flag.CommandLine.Output(), "Flags:\n")
+		flag.PrintDefaults()
+	}
 	debug := flag.Bool("debug", false, "enable debug logging")
 	silent := flag.Bool("silent", false, "enable silent mode")
+	bcast := flag.Bool("bcast", false, "enable the broadcast listener")
 	flag.Parse()
 	args := flag.Args()
 
@@ -33,7 +41,7 @@ func main() {
 		log.EnableSilent()
 	}
 	proxy := server.NewProxy(ip, int(port))
-	err = proxy.Serve()
+	err = proxy.Serve(*bcast)
 	if err != nil {
 		log.LogErrorf("Proxy start error: %s\n", err.Error())
 		os.Exit(1)
