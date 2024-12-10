@@ -22,16 +22,20 @@
     ```console
     go-solarmanV5-proxy 192.168.1.3 12345
     ```
-  * `-debug` flag can be used to see what's going on under the hood :sunglasses:
-  * `-silent` flag will make the proxy completely silent
-  * `-bcast` enable the broadcast listener/server
-  * all messages are logged to stdout for now 
+ * Options
+   * `-debug` flag can be used to see what's going on under the hood :sunglasses:
+   * `-silent` flag will make the proxy completely silent
+   * `-bcast` activates a broadcast listener/server
+   * `-buffered` will activate sequential communication with the datalogger 
+ * all messages are logged to stdout for now 
 * Data logger configuration (config_hide.html)
 ![image](img/logger_tcp_srv.png "Config")
 
 All clients then can be connected to port 8899 of the proxy server
 
 When the `-bcast` flag is used the proxy will respond to logger scan requests. All dataloggers currently connected will be listed.
+
+The `-buffered` flag allows much more stable communication with the inverter when 2 or more clients are used.
 
 ---
 #### Build

@@ -68,7 +68,7 @@ func (s *V5ProxyServer) Wait() {
 }
 
 // Serve - Creates listeners and starts the proxy loops
-func (s *V5ProxyServer) Serve(enableBroadcast bool) error {
+func (s *V5ProxyServer) Serve(enableBroadcast, loggerBuffering bool) error {
 
 	var err error
 	s.clientsL, err = net.Listen("tcp4", fmt.Sprintf("%s:%d", "0.0.0.0", s.ClientsPort))
@@ -82,7 +82,7 @@ func (s *V5ProxyServer) Serve(enableBroadcast bool) error {
 	}
 
 	log.LogInfof("[Proxy] sockets created. ClientPort [%d] - LoggersPort [%d]\n", 8899, s.LoggersPort)
-	go s.loggersConn()
+	go s.loggersConn(loggerBuffering)
 	go s.clientsConn()
 	go s.handleBroadcasts()
 	go s.janitor()
@@ -95,7 +95,7 @@ func (s *V5ProxyServer) Serve(enableBroadcast bool) error {
 }
 
 // loggersConn Connection manager for data logger connections
-func (s *V5ProxyServer) loggersConn() {
+func (s *V5ProxyServer) loggersConn(enableBuffering bool) {
 
 	log.LogInfof("[Loggers-Proxy] waiting for logger connections\n")
 
@@ -122,7 +122,9 @@ func (s *V5ProxyServer) loggersConn() {
 		}
 		cl := client.NewLoggerClient(conn, s.loggersComm, s.loggerStopped)
 		s.martians[cl.Id] = cl
-
+		if enableBuffering {
+			cl.EnableBuffering()
+		}
 		go cl.Run()
 	}
 }

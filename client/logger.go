@@ -10,6 +10,15 @@ import (
 	"github.com/githubDante/go-solarman-proxy/protocol"
 )
 
+const (
+	writeTimeout = 200 * time.Millisecond // Deadline for socket write operations
+)
+
+type loggerBuffer struct {
+	logger *ClientSolarman
+	buf    []byte
+}
+
 // ClientLogger - А data logger connected to the proxy
 type ClientLogger struct {
 	Conn   net.Conn
@@ -20,9 +29,12 @@ type ClientLogger struct {
 	// Reporting channel for serial numbers
 	SReporter chan *CommLogger
 	// Reporting channel on socket disconnection
-	stoppedCh chan *CommLogger
-	Running   bool
-	Id        uint32
+	stoppedCh      chan *CommLogger
+	Running        bool
+	Id             uint32
+	waitingForData bool
+	dataBuffer     []*loggerBuffer
+	bufferWanted   bool
 }
 
 // NewLoggerClient - Initializes a new data-logger client
@@ -82,6 +94,7 @@ func (c *ClientLogger) Run() {
 			}
 		}
 
+		c.waitingForData = false
 		go c.sendToAll(buffer[:pLen])
 	}
 }
@@ -95,6 +108,14 @@ func (c *ClientLogger) Stop() {
 		_, _ = c.Conn.Write([]byte{0})
 		_ = c.Conn.Close()
 	}
+}
+
+// EnableBuffering activates the logger write buffer. All messages will be sent sequentially
+//
+// The responses from the logger are still broadcasted to all clients
+func (c *ClientLogger) EnableBuffering() {
+	log.LogDebugf("Logger <%p> write buffer activated.\n", c)
+	c.bufferWanted = true
 }
 
 // sendToAll packet broadcast to all connected clients
@@ -122,6 +143,13 @@ func (c *ClientLogger) sendToAll(data []byte) {
 
 	log.LogDebugf("Logger <%p> data sent to all [%d] clients...\n", c, len(c.Clients))
 	log.LogDebugf("Logger <%p> data: %s\n", c, hex.EncodeToString(data))
+
+	if c.pendingInBuffer() {
+		buf := c.getFromBuffer()
+		if buf != nil {
+			c.Send(buf.buf, buf.logger)
+		}
+	}
 }
 
 func (c *ClientLogger) Add(cl *ClientSolarman) {
@@ -138,8 +166,24 @@ func (c *ClientLogger) Send(data []byte, from *ClientSolarman) {
 	if !c.Running {
 		return
 	}
+	if c.waitingForData && c.bufferWanted {
+		c.addToBuffer(data, from)
+		return
+	}
 	log.LogDebugf("Logger <%p> sending data from <%p>\n", c, from)
-	c.Conn.Write(data)
+	c.Conn.SetWriteDeadline(time.Now().Add(writeTimeout))
+	c.waitingForData = true
+	_, err := c.Conn.Write(data)
+	if err != nil {
+		log.LogErrorf("Cannot communicate with logger <%p>\n", c)
+		log.LogWarnf("Logger <%p> will be disconnected!\n", c)
+		c.Stop()
+	} else {
+		if c.bufferWanted {
+			log.LogInfof("Logger <%p> sending complete. Waiting for data [%t]\n", c, c.waitingForData)
+		}
+	}
+
 }
 
 // DumpClients drops all ClientSolarman instances associated with the logger and returns them as a slice
@@ -155,5 +199,32 @@ func (c *ClientLogger) DumpClients() []*ClientSolarman {
 // serialProbe send a predefined packet to the datalogger in order to acquire the serial number
 func (c *ClientLogger) serialProbe() {
 	probe := ReadHolding
-	c.Conn.Write(probe.ToBytes())
+	c.Conn.SetWriteDeadline(time.Now().Add(writeTimeout))
+	_, err := c.Conn.Write(probe.ToBytes())
+	if err != nil {
+		log.LogErrorf("SerialProbe failed, Cannot communicate with logger <%p>\n", c)
+		log.LogWarnf("Logger <%p> will be disconnected!\n", c)
+		c.Stop()
+	}
+}
+
+func (c *ClientLogger) addToBuffer(buffer []byte, logger *ClientSolarman) {
+	log.LogDebugf("Logger <%p> sending [%d bytes] to write buffer.\n", c, len(buffer))
+	c.dataBuffer = append(c.dataBuffer, &loggerBuffer{logger: logger, buf: buffer})
+}
+
+func (c *ClientLogger) getFromBuffer() *loggerBuffer {
+	if len(c.dataBuffer) == 0 {
+		return nil
+	}
+	log.LogDebugf("Logger <%p> write buffer len [%d].\n", c, len(c.dataBuffer))
+	top := c.dataBuffer[0]
+	c.dataBuffer = c.dataBuffer[1:]
+	log.LogDebugf("Logger <%p> got [%d bytes] message from buffer. Pending messages [%d].\n",
+		c, len(top.buf), len(c.dataBuffer))
+	return top
+}
+
+func (c *ClientLogger) pendingInBuffer() bool {
+	return len(c.dataBuffer) > 0
 }

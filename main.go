@@ -20,6 +20,7 @@ func main() {
 	debug := flag.Bool("debug", false, "enable debug logging")
 	silent := flag.Bool("silent", false, "enable silent mode")
 	bcast := flag.Bool("bcast", false, "enable the broadcast listener")
+	buffer := flag.Bool("buffered", false, "enable the logger write buffer (sequential client communication)")
 	flag.Parse()
 	args := flag.Args()
 
@@ -41,7 +42,7 @@ func main() {
 		log.EnableSilent()
 	}
 	proxy := server.NewProxy(ip, int(port))
-	err = proxy.Serve(*bcast)
+	err = proxy.Serve(*bcast, *buffer)
 	if err != nil {
 		log.LogErrorf("Proxy start error: %s\n", err.Error())
 		os.Exit(1)
